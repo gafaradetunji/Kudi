@@ -32,7 +32,7 @@ class AuthController extends BaseController
             'lastname' => 'required',
             'middlename' => 'nullable',
             'email' => 'required|email',
-            'date_of_birth' => 'required|date',
+            'date_of_birth' => 'date',
             'password' => 'required',
             'c_password' => 'required|same:password',
             'phone' => [
@@ -102,7 +102,7 @@ class AuthController extends BaseController
         $input = $request->all();
         $user = User::where('email', $input['email'])->first();
         if(!$user){
-            return $this->sendError('User not found', [], 404);
+            return $this->sendError('User not found', 'This user does not exist', 404);
         }
 
         $userDetail = UserDetail::where('user_id', $user->id)->first();
@@ -198,10 +198,16 @@ class AuthController extends BaseController
         }
 
         $user_mail = User::where('email', $request->email)->first();
+
+        if (!$user_mail) {
+            return $this->sendError('User not found', 'This user does not exist', 404);
+        }
+
+        // Check if the user is verified
         $user_verify = UserDetail::where('user_id', $user_mail->id)->value('isverified');
-        
-        if($user_mail->email_verified_at == null && $user_verify == 0){
-            return $this->sendError('User not verified', [], 400);
+
+        if (!$user_verify) {
+            return $this->sendError('User not verified', 'Please verify your account before logging in', 403);
         }
 
         $input = $request->all();
