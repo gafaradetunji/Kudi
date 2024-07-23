@@ -1,7 +1,12 @@
 FROM php:8.2-fpm
 
-# Install Nginx
-RUN apt-get update && apt-get install -y nginx
+# Install necessary packages including Nginx and Composer dependencies
+RUN apt-get update && apt-get install -y \
+    nginx \
+    git \
+    unzip \
+    curl \
+    && apt-get clean
 
 # Install Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
