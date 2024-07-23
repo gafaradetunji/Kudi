@@ -22,7 +22,7 @@ RUN ./00-laravel-deploy.sh
 EXPOSE 80
 
 # Copy custom Nginx configuration
-COPY nginx-site.conf /etc/nginx/sites-available/default
+COPY conf/nginx/nginx-site.conf /etc/nginx/sites-available/default
 
 # Start Nginx and PHP-FPM
 CMD service nginx start && php-fpm
