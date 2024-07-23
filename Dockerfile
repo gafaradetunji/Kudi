@@ -1,4 +1,4 @@
-FROM kudi/nginx-php-fpm:8.2
+FROM kudi:8.2
 
 COPY . .
 
