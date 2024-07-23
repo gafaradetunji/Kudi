@@ -1,20 +1,28 @@
-FROM kudi:8.2
+FROM php:8.2-fpm
 
-COPY . .
+# Install Nginx
+RUN apt-get update && apt-get install -y nginx
 
-# Image config
-ENV SKIP_COMPOSER 1
-ENV WEBROOT /var/www/html/public
-ENV PHP_ERRORS_STDERR 1
-ENV RUN_SCRIPTS 1
-ENV REAL_IP_HEADER 1
+# Copy your application code
+COPY . /var/www/html
 
-# Laravel config
-ENV APP_ENV production
-ENV APP_DEBUG false
-ENV LOG_CHANNEL stderr
+# Set the working directory
+WORKDIR /var/www/html
 
-# Allow composer to run as root
-ENV COMPOSER_ALLOW_SUPERUSER 1
+# Install dependencies
+RUN composer install --no-dev --optimize-autoloader
 
-CMD ["/start.sh"]
+# Make the setup script executable
+RUN chmod +x 00-laravel-deploy.sh
+
+# Run the setup script
+RUN ./00-laravel-deploy.sh
+
+# Expose port 80
+EXPOSE 80
+
+# Copy custom Nginx configuration
+COPY nginx.conf /etc/nginx/sites-available/default
+
+# Start Nginx and PHP-FPM
+CMD service nginx start && php-fpm
