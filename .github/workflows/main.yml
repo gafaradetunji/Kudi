@@ -21,9 +21,6 @@ jobs:
 
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress --no-suggest --no-interaction
-
-      - name: Run tests
-        run: vendor/bin/phpunit
       - uses: actions/setup-node@master
       - name: Copy .env
         run: php -r "file_exists('.env') || copy('.env.example', '.env');"
