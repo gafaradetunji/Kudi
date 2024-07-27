@@ -7,12 +7,13 @@ use App\Models\UserDetail;
 use Illuminate\Support\Facades\DB;
 
 use App\Http\Controllers\API\BaseController;
-use App\Http\Controllers\MailerController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Validator;
+
+
 
 class AuthController extends BaseController
 {
@@ -100,9 +101,9 @@ class AuthController extends BaseController
         }
 
         $input = $request->all();
-        $user = User::where('email', $input['email'])->first();
-        if(!$user){
-            return $this->sendError('User not found', 'This user does not exist', 404);
+        $user = getUserByMail($input['email'], $this, 'This user does not exist');
+        if (!$user instanceof User) {
+            return $user;
         }
 
         $userDetail = UserDetail::where('user_id', $user->id)->first();
@@ -148,9 +149,9 @@ class AuthController extends BaseController
         }
 
         $input = $request->all();
-        $user = User::where('email', $input['email'])->first();
-        if(!$user){
-            return $this->sendError('User not found', [], 404);
+        $user = getUserByMail($input['email'], $this);
+        if (!$user instanceof User) {
+            return $user;
         }
 
         $userDetail = UserDetail::where('user_id', $user->id)->first();
@@ -197,10 +198,10 @@ class AuthController extends BaseController
             return $this->sendError('Validation Error.', $validator->errors(), 406);       
         }
 
-        $user_mail = User::where('email', $request->email)->first();
-
-        if (!$user_mail) {
-            return $this->sendError('User not found', 'This user does not exist', 404);
+        $input = $request->all();
+        $user_mail = getUserByMail($request->email, $this, 'This user does not exist');
+        if (!$user_mail instanceof User) {
+            return $user_mail;
         }
 
         // Check if the user is verified
@@ -219,5 +220,73 @@ class AuthController extends BaseController
         else{
             return $this->sendError('Unauthorised', [], 401);
         }
+    }
+
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+        ]);
+   
+        if($validator->fails()){
+            return $this->sendError('Validation Error.', $validator->errors(), 406);       
+        }
+
+        $input = $request->all();
+        $user = getUserByMail($input['email'], $this);
+        if (!$user instanceof User) {
+            return $user;
+        }
+
+        $otpCode = rand(1000, 9999);
+        $update_code = DB::table('user_table')
+        ->where('user_id', $user->id)
+        ->update(['code' => $otpCode, 'codetime' => Now()]);
+
+        $code = DB::table('user_table')
+            ->where('user_id', $user->id)
+            ->value('code');
+
+        $toAddress = $user->email;
+        $data = [
+            'name' => $user->name,
+            'code' => $code,
+        ];
+
+        Mail::to($toAddress)->send(new SendUserMail($toAddress, $data));
+        $success =  [];
+   
+        return $this->sendResponse($success, 'Code sent successfully.');
+    }
+
+    public function resetPassword(Request $request) : JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'password' => 'required',
+            'c_password' => 'required|same:password',
+        ]);
+   
+        if($validator->fails()){
+            return $this->sendError('Validation Error.', $validator->errors(), 406);       
+        }
+
+        $input = $request->all();
+        $user = getUserByMail($input['email'], $this);
+        if (!$user instanceof User) {
+            return $user;
+        }
+
+        $userDetail = UserDetail::where('user_id', $user->id)->first();
+        if(!$userDetail){
+            return $this->sendError('User not found', [], 404);
+        }
+        $user->password = bcrypt($input['password']);
+        $updatePassword = DB::table('users')
+            ->where('id', $user->id)
+            ->update(['password' => $user->password]);
+
+        $success =  [];
+        return $this->sendResponse($success,'Password reset successfully.');
     }
 }

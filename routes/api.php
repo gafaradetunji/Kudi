@@ -10,6 +10,8 @@ Route::controller(AuthController::class)->group(function(){
     Route::post('login', 'login');
     Route::post('verifyOtp', 'verifyOtp');
     Route::post('resendOtp', 'resendOtp');
+    Route::post('forgotPassword', 'forgotPassword');
+    Route::post('resetPassword', 'resetPassword');
 });
 
 Route::get('/user', function (Request $request) {
